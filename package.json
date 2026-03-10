@@ -1,6 +1,6 @@
 {
   "name": "koishi-plugin-adapter-pbhh",
-  "description": "pbhh适配器",
+  "description": "[pbhh](http://123.56.89.122/) 适配器",
   "version": "0.0.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
@@ -33,16 +33,16 @@
     "preview": true,
     "hidden": false,
     "description": {
-      "zh-TW": "pbhh適配器",
-      "zh": "pbhh适配器",
-      "ja": "pbhhアダプター",
-      "fr": "pbhh Adaptateur",
-      "es": "pbhh Adaptador",
-      "pt": "pbhh Adaptador",
-      "ru": "pbhh Адаптер",
-      "en": "pbhh Adapter",
-      "de": "pbhh Adapter",
-      "ko": "pbhh 어댑터"
+      "zh-TW": "[pbhh](http://123.56.89.122/) 適配器",
+      "zh": "[pbhh](http://123.56.89.122/) 适配器",
+      "ja": "[pbhh](http://123.56.89.122/) アダプター",
+      "fr": "[pbhh](http://123.56.89.122/)  Adaptateur",
+      "es": "[pbhh](http://123.56.89.122/)  Adaptador",
+      "pt": "[pbhh](http://123.56.89.122/)  Adaptador",
+      "ru": "[pbhh](http://123.56.89.122/)  Адаптер",
+      "en": "[pbhh](http://123.56.89.122/)  Adapter",
+      "de": "[pbhh](http://123.56.89.122/)  Adapter",
+      "ko": "[pbhh](http://123.56.89.122/)  어댑터"
     }
   },
   "peerDependencies": {
