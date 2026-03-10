@@ -1,0 +1,53 @@
+{
+  "name": "koishi-plugin-adapter-pbhh",
+  "description": "pbhh适配器",
+  "version": "0.0.1",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "src"
+  ],
+  "license": "MIT",
+  "contributors": [
+    "shangxue <1919892171@qq.com>"
+  ],
+  "bugs": {
+    "url": "https://github.com/shangxueink/koishi-plugin-adapter-pbhh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shangxueink/koishi-plugin-adapter-pbhh.git"
+  },
+  "homepage": "https://github.com/shangxueink/koishi-plugin-adapter-pbhh",
+  "keywords": [
+    "koishi",
+    "bot",
+    "pbhh",
+    "satori",
+    "chatbot",
+    "develop"
+  ],
+  "koishi": {
+    "preview": true,
+    "hidden": false,
+    "description": {
+      "zh-TW": "pbhh適配器",
+      "zh": "pbhh适配器",
+      "ja": "pbhhアダプター",
+      "fr": "pbhh Adaptateur",
+      "es": "pbhh Adaptador",
+      "pt": "pbhh Adaptador",
+      "ru": "pbhh Адаптер",
+      "en": "pbhh Adapter",
+      "de": "pbhh Adapter",
+      "ko": "pbhh 어댑터"
+    }
+  },
+  "peerDependencies": {
+    "koishi": "^4.18.8"
+  },
+  "devDependencies": {
+    "@koishijs/assets": "^1.1.2"
+  }
+}
