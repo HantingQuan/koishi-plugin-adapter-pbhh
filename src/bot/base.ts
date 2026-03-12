@@ -76,11 +76,22 @@ export class PbhhBot extends Bot<Context, Config>
     {
       try
       {
-        this.joinRoom(this.config.autoJoinRoom);
-        this.log.info('已自动加入聊天室 %d', this.config.autoJoinRoom);
+        const rooms = await this.internal.listRooms(this.token);
+        const matched = rooms
+          .filter((r) => r.name === this.config.autoJoinRoom)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        if (matched.length === 0)
+        {
+          this.log.warn('未找到名称为 "%s" 的聊天室，跳过自动加入', this.config.autoJoinRoom);
+        } else
+        {
+          const room = matched[0];
+          this.joinRoom(room.id);
+          this.log.info('已自动加入聊天室 "%s" (id=%d)', room.name, room.id);
+        }
       } catch (err)
       {
-        this.log.warn('自动加入聊天室 %d 失败：%o', this.config.autoJoinRoom, err);
+        this.log.warn('自动加入聊天室 "%s" 失败：%o', this.config.autoJoinRoom, err);
       }
     }
   }
