@@ -13,6 +13,7 @@ export class PbhhBot extends Bot<Context, Config>
 {
   static inject = [];
   public readonly platform = 'pbhh';
+  private _started = false;
   private tokenValue: string | null = null;
   public readonly internal: PbhhInternal;
   protected readonly roomManager: RoomWsManager;
@@ -52,6 +53,8 @@ export class PbhhBot extends Bot<Context, Config>
   }
   async start(): Promise<void>
   {
+    if (this._started) return;
+    this._started = true;
     const token = await this.internal.login(this.config.username, this.config.password);
     this.tokenValue = token;
     this.tokenStore.set(this.selfId, token);
@@ -97,6 +100,7 @@ export class PbhhBot extends Bot<Context, Config>
   }
   async stop(): Promise<void>
   {
+    this._started = false;
     this.roomManager.disposeAll();
     this.tokenValue = null;
     if (this instanceof PbhhBotWithSse)
