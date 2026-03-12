@@ -72,6 +72,17 @@ export class PbhhBot extends Bot<Context, Config>
     this.user.avatar = avatarUrl;
     await super.start();
     this.online();
+    if (this.config.autoJoinRoom != null)
+    {
+      try
+      {
+        this.joinRoom(this.config.autoJoinRoom);
+        this.log.info('已自动加入聊天室 %d', this.config.autoJoinRoom);
+      } catch (err)
+      {
+        this.log.warn('自动加入聊天室 %d 失败：%o', this.config.autoJoinRoom, err);
+      }
+    }
   }
   async stop(): Promise<void>
   {

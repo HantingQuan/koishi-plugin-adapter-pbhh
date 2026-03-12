@@ -21,13 +21,22 @@ function withTimeout(ctx: Context, init: RequestInit | undefined, timeout: numbe
     ...init,
     signal: controller.signal,
   };
-  const disposeTimer = ctx.setTimeout(() =>
+  
+  let disposeTimer: (() => void) | null = null;
+  try
   {
+    disposeTimer = ctx.setTimeout(() =>
+    {
+      controller.abort();
+    }, timeout);
+  } catch
+  {
+    
     controller.abort();
-  }, timeout);
+  }
   return {
     init: merged,
-    dispose: () => disposeTimer(),
+    dispose: () => disposeTimer?.(),
   };
 }
 function getRetryDelay(attempt: number): number

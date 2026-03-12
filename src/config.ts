@@ -16,6 +16,8 @@ export interface Config
   proxyUrl?: string;
   notificationPrefs: NotificationPrefs;
   userAgent: string;
+  replyOnlyToBot: boolean;
+  autoJoinRoom: number | null;
   debug: boolean;
 }
 export const Config: Schema<Config> = Schema.intersect([
@@ -50,6 +52,15 @@ export const Config: Schema<Config> = Schema.intersect([
       post: Schema.boolean().default(true).description('关注的人发帖通知'),
     }),
   }).description('订阅设置'),
+  Schema.object({
+    replyOnlyToBot: Schema.boolean().default(true).description('仅处理回复机器人帖子的消息（关闭后，所有帖子的回复均触发 session）'),
+  }).description('消息过滤'),
+  Schema.object({
+    autoJoinRoom: Schema.union([
+      Schema.const(null).description('不自动加入群组'),
+      Schema.number().min(1).step(1).description('启动时自动加入的聊天室 ID'),
+    ]).default(null).description('启动时自动加入的聊天室'),
+  }).description('聊天室设置'),
   Schema.object({
     debug: Schema.boolean().default(false).description('调试日志').experimental(),
   }).description('调试设置'),

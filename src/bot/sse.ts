@@ -153,18 +153,34 @@ export class PbhhBotWithSse extends PbhhBot
   private async handleEvent(evt: SseEvent)
   {
     if (!evt || !evt.topic) return;
-    if (evt.topic !== 'notify.post.replied')
+    if (evt.topic === 'post.liked')
     {
-      if (this.config.debug)
+      await this.handleLikedEvent(evt);
+      return;
+    }
+    if (evt.topic === 'notify.post.replied')
+    {
+      if (this.config.replyOnlyToBot)
       {
-        this.log.debug('SSE topic=%s', evt.topic);
-      }
-      if (evt.topic === 'post.liked')
-      {
-        await this.handleLikedEvent(evt);
+        await this.handleNotifyPostReplied(evt);
       }
       return;
     }
+    if (evt.topic === 'post.replied')
+    {
+      if (!this.config.replyOnlyToBot)
+      {
+        await this.handlePostReplied(evt);
+      }
+      return;
+    }
+    if (this.config.debug)
+    {
+      this.log.debug('SSE topic=%s', evt.topic);
+    }
+  }
+  private async handleNotifyPostReplied(evt: SseEvent)
+  {
     const p = evt.payload as Record<string, unknown>;
     const actorUsername = String(p.actorUsername || '');
     const actorNickname = String(p.actorNickname || actorUsername);
@@ -196,10 +212,8 @@ export class PbhhBotWithSse extends PbhhBot
     } catch
     {
     }
-
     const guildId = String(rootId);
     const channelId = `post:${rootId}`;
-
     let quote: Message | undefined;
     try
     {
@@ -326,5 +340,95 @@ export class PbhhBotWithSse extends PbhhBot
     }
     this.dispatch(session);
     this.log.debug('已 dispatch notify.post.replied：post=%s reply=%s', postId, replyId);
+  }
+  private async handlePostReplied(evt: SseEvent)
+  {
+    const p = evt.payload as Record<string, unknown>;
+    const actorUsername = String(p.actorUsername || '');
+    const parentId = Number(p.parentId);
+    const replyId = Number(p.replyId);
+    const timestamp = Number(evt.timestamp || Date.now());
+    if (!Number.isFinite(parentId) || !Number.isFinite(replyId)) return;
+    if (actorUsername === this.selfId) return;
+    if (this.config.debug)
+    {
+      this.log.debug('SSE post.replied: parentId=%s replyId=%s actor=%s', parentId, replyId, actorUsername);
+    }
+    let userAvatar = '';
+    let userName = actorUsername;
+    try
+    {
+      const u = await this.getUser(actorUsername);
+      userName = u.name || actorUsername;
+      userAvatar = u.avatar || '';
+    } catch { }
+    let rootId = parentId;
+    let postTitle = `帖子 ${parentId}`;
+    try
+    {
+      const post = await this.internal.getPost(this.token, parentId);
+      rootId = Number(post.rootId || post.id || parentId);
+      if (post.title && String(post.title).trim()) postTitle = String(post.title).trim();
+    } catch { }
+    const guildId = String(rootId);
+    const channelId = `post:${rootId}`;
+    let replyContent = '';
+    let quote: Message | undefined;
+    try
+    {
+      const thread = await this.internal.getThread(this.token, rootId);
+      const current = thread.find((r) => r.id === replyId);
+      if (this.config.debug)
+      {
+        this.log.debug('post.replied quote probe: replyId=%s found=%s', replyId, Boolean(current));
+      }
+      if (current)
+      {
+        replyContent = current.content;
+        const qParentId = Number(current.parentId);
+        if (Number.isFinite(qParentId) && qParentId > 0)
+        {
+          const parent = thread.find((r) => r.id === qParentId);
+          const qContent = parent ? String(parent.content || '') : String(current.parentContent || '');
+          const qUsername = parent ? String(parent.username || '') : String(current.parentUsername || '');
+          if (qContent)
+          {
+            quote = {
+              id: String(qParentId),
+              content: qContent,
+              user: qUsername ? { id: qUsername } : undefined,
+              channel: { id: channelId, type: Universal.Channel.Type.TEXT },
+              guild: { id: guildId },
+              createdAt: timestamp,
+              updatedAt: timestamp,
+            };
+          }
+        }
+      }
+    } catch (err)
+    {
+      if (this.config.debug) this.log.debug('post.replied getThread failed: %o', err);
+    }
+    if (!replyContent) return;
+    const session = this.session({
+      type: 'message',
+      timestamp,
+      selfId: this.selfId,
+      platform: this.platform,
+      user: { id: actorUsername, name: userName, avatar: userAvatar },
+      guild: { id: guildId, name: postTitle },
+      channel: { id: channelId, name: postTitle, type: Universal.Channel.Type.TEXT },
+      message: { id: String(replyId), content: replyContent, quote },
+    });
+    (session.event as unknown as Record<string, unknown>).quote = quote;
+    session.messageId = String(replyId);
+    session.content = replyContent;
+    session.quote = quote;
+    if (this.config.debug)
+    {
+      this.log.debug('SSE dispatch post.replied session: %o', session.toJSON());
+    }
+    this.dispatch(session);
+    this.log.debug('已 dispatch post.replied：parentId=%s replyId=%s', parentId, replyId);
   }
 }
