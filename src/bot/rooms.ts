@@ -130,10 +130,6 @@ export class RoomWsManager
     ws.onmessage = (event) =>
     {
       const raw = String((event as { data: unknown; }).data);
-      if (this.debug)
-      {
-        this.log.debug('RoomWs recv roomId=%d: %s', roomId, raw.slice(0, 200));
-      }
       let parsed: Record<string, unknown>;
       try
       {
@@ -149,6 +145,10 @@ export class RoomWsManager
         return;
       }
       if (type === 'pong') return;
+      if (this.debug)
+      {
+        this.log.debug('RoomWs recv roomId=%d: %s', roomId, raw.slice(0, 200));
+      }
 
       if (type === 'roster')
       {
