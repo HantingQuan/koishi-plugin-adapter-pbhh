@@ -71,7 +71,7 @@ export class PbhhBot extends Bot<Context, Config>
     }
     const me = await this.internal.me(token);
     this.user.name = me.nickname || me.username;
-    const avatarUrl = await resolveAvatarUrl(me.avatar, this.config.baseUrl);
+    const avatarUrl = await resolveAvatarUrl(me.avatar, this.config.baseUrl, this.config.gravatarMirror);
     this.user.avatar = avatarUrl;
     await super.start();
     this.online();
@@ -121,7 +121,7 @@ export class PbhhBot extends Bot<Context, Config>
     return {
       id: u.username,
       name: u.nickname || u.username,
-      avatar: await resolveAvatarUrl(u.avatar, this.config.baseUrl),
+      avatar: await resolveAvatarUrl(u.avatar, this.config.baseUrl, this.config.gravatarMirror),
     };
   }
   async sendMessage(channelId: string, content: Fragment, guildId?: string, options?: SendOptions): Promise<string[]>
@@ -160,18 +160,15 @@ export class PbhhBot extends Bot<Context, Config>
   {
     return this.roomManager.sendMessage(roomId, this.token, content);
   }
-
   async createRoom(name: string): Promise<Room>
   {
     const room = await this.internal.createRoom(this.token, name);
     const guildId = `room:${room.id}`;
     const channelId = `room:${room.id}`;
-
     this.dispatch(this.session({
       type: 'guild-added',
       guild: { id: guildId, name: room.name },
     }));
-
     this.dispatch(this.session({
       type: 'channel-added',
       guild: { id: guildId, name: room.name },
@@ -183,12 +180,11 @@ export class PbhhBot extends Bot<Context, Config>
     }
     return room;
   }
-
   private async dispatchRoomMessage(roomId: number, msg: RoomWsMessage): Promise<void>
   {
     const channelId = `room:${roomId}`;
     const guildId = `room:${roomId}`;
-    const avatar = await resolveAvatarUrl(msg.avatar, this.config.baseUrl);
+    const avatar = await resolveAvatarUrl(msg.avatar, this.config.baseUrl, this.config.gravatarMirror);
     const session = this.session({
       type: 'message',
       timestamp: new Date(msg.createdAt).getTime(),
@@ -207,18 +203,16 @@ export class PbhhBot extends Bot<Context, Config>
     }
     this.dispatch(session);
   }
-
   private async dispatchRoomEvent(roomId: number, event: RoomWsEvent): Promise<void>
   {
     const guildId = `room:${roomId}`;
     if (event.type === 'join')
     {
-      const avatar = await resolveAvatarUrl(event.userInfo.avatar, this.config.baseUrl);
+      const avatar = await resolveAvatarUrl(event.userInfo.avatar, this.config.baseUrl, this.config.gravatarMirror);
       const user = { id: event.username, name: event.userInfo.nickname, avatar };
       this.dispatch(this.session({
         type: 'guild-member-added',
         guild: { id: guildId },
-
         member: { user },
         user,
       }));
@@ -229,12 +223,11 @@ export class PbhhBot extends Bot<Context, Config>
     }
     else if (event.type === 'leave')
     {
-      const avatar = await resolveAvatarUrl(event.userInfo.avatar, this.config.baseUrl);
+      const avatar = await resolveAvatarUrl(event.userInfo.avatar, this.config.baseUrl, this.config.gravatarMirror);
       const user = { id: event.username, name: event.userInfo.nickname, avatar };
       this.dispatch(this.session({
         type: 'guild-member-removed',
         guild: { id: guildId },
-
         member: { user },
         user,
       }));
@@ -243,6 +236,5 @@ export class PbhhBot extends Bot<Context, Config>
         this.log.debug('RoomWs guild-member-removed roomId=%d user=%s', roomId, event.username);
       }
     }
-
   }
 }

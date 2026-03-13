@@ -1,4 +1,5 @@
 import { Schema } from 'koishi';
+export type GravatarMirror = 'cravatar' | 'loli';
 export interface NotificationPrefs
 {
   like: boolean;
@@ -18,6 +19,7 @@ export interface Config
   userAgent: string;
   replyOnlyToBot: boolean;
   autoJoinRoom: string | null;
+  gravatarMirror: GravatarMirror;
   debug: boolean;
 }
 export const Config: Schema<Config> = Schema.intersect([
@@ -61,6 +63,12 @@ export const Config: Schema<Config> = Schema.intersect([
       Schema.string().description('自动加入的聊天室名称'),
     ]).default(null).description('启动时自动加入的聊天室<br>填写聊天室名称；若有重名 则加入最新创建的'),
   }).description('聊天室设置'),
+  Schema.object({
+    gravatarMirror: Schema.union([
+      Schema.const('cravatar' as const).description('Cravatar 源'),
+      Schema.const('loli' as const).description('Loli 源 / sm.ms'),
+    ]).default('loli').description('Gravatar 头像镜像源<br>选择你喜欢的 Gravatar 镜像源即可啦~~'),
+  }).description('头像设置'),
   Schema.object({
     debug: Schema.boolean().default(false).description('调试日志').experimental(),
   }).description('调试设置'),
