@@ -22,7 +22,7 @@ export interface Config
 }
 export const Config: Schema<Config> = Schema.intersect([
   Schema.object({
-    baseUrl: Schema.string().default('http://123.56.89.122').description('平渹网 服务地址').role('link'),
+    baseUrl: Schema.string().default('https://pbhh.net').description('平渹网 服务地址').role('link'),
     username: Schema.string().required().description('账号用户名'),
     password: Schema.string().required().description('账号密码').role('secret'),
   }).description('连接设置'),
