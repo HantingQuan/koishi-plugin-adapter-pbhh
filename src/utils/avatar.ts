@@ -3,7 +3,7 @@ export type AvatarSpec = string;
 export function getDefaultAvatarUrl(baseUrl: string): string
 {
   const base = baseUrl.replace(/\/+$/, '');
-  return `${base}/logo.svg`;
+  return `${base}/default-avatar.svg`;
 }
 function getGravatarUrl(emailOrHash: string): string
 {
