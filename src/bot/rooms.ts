@@ -44,6 +44,8 @@ interface RoomConnection
 {
   ws: InstanceType<typeof WebSocket>;
   roomId: number;
+  token: string;
+  closing: boolean;
   stopPing: (() => void) | null;
 }
 function toWsUrl(baseUrl: string, path: string): string
@@ -114,7 +116,7 @@ export class RoomWsManager
   {
     const url = toWsUrl(this.baseUrl, `/api/rooms/ws/${roomId}?token=${encodeURIComponent(token)}`);
     const ws = new WebSocket(url);
-    const conn: RoomConnection = { ws, roomId, stopPing: null };
+    const conn: RoomConnection = { ws, roomId, token, closing: false, stopPing: null };
     this.connections.set(roomId, conn);
     ws.onopen = () =>
     {
@@ -213,12 +215,23 @@ export class RoomWsManager
     };
     ws.onclose = () =>
     {
-      this.log.debug('RoomWs: 连接关闭 roomId=%d', roomId);
       conn.stopPing?.();
       conn.stopPing = null;
       this.connections.delete(roomId);
-
       this.userCache.delete(roomId);
+      if (conn.closing)
+      {
+        this.log.debug('RoomWs: 连接已主动关闭 roomId=%d', roomId);
+        return;
+      }
+      this.log.warn('RoomWs: 连接意外断开 roomId=%d，5s 后重连…', roomId);
+      this.ctx.setTimeout(() =>
+      {
+        if (!this.connections.has(roomId))
+        {
+          this._connectPersistent(roomId, conn.token);
+        }
+      }, 5_000);
     };
     ws.onerror = () =>
     {
@@ -270,6 +283,8 @@ export class RoomWsManager
   }
   private _closeConn(conn: RoomConnection): void
   {
+    // 先标记主动关闭，防止 onclose 触发重连
+    conn.closing = true;
     conn.stopPing?.();
     conn.stopPing = null;
     const state = conn.ws.readyState;

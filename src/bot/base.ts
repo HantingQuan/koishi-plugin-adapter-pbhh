@@ -108,12 +108,16 @@ export class PbhhBot extends Bot<Context, Config>
       this.stopSse();
     }
     await super.stop();
-    this.status = Universal.Status.OFFLINE;
-    this.dispatch(this.session({
-      type: 'login-removed',
-      platform: this.platform,
-      selfId: this.selfId,
-    }));
+  }
+  async createMessage(
+    channelId: string,
+    content: Fragment,
+    guildId?: string,
+    options?: SendOptions,
+  ): Promise<Universal.Message[]>
+  {
+    const ids = await this.sendMessage(channelId, content, guildId, options);
+    return ids.map((id) => ({ id }));
   }
   async getUser(userId: string): Promise<Universal.User>
   {

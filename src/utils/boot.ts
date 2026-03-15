@@ -30,28 +30,8 @@ export function setupBootWithRetry(ctx: Context, config: Config, log: PbhhLogger
       {
         const http = await createFetchClient(ctx, config, log);
         const bot = new PbhhBotWithUnsupported(botCtx, config, http, tokenStore, log);
-        bot.dispatch(bot.session({
-          type: 'login-added',
-          platform: bot.platform,
-          selfId: bot.selfId,
-        }));
         await bot.start();
-        bot.dispatch(bot.session({
-          type: 'login-updated',
-          platform: bot.platform,
-          selfId: bot.selfId,
-        }));
         log.debug(`机器人已上线：${bot.selfId}`);
-        botCtx.on('dispose', async () =>
-        {
-          try
-          {
-            await bot.stop();
-          } catch (err)
-          {
-            log.error('stop 失败', err);
-          }
-        });
         void (Universal.Status.ONLINE);
       } catch (err)
       {

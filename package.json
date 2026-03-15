@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-adapter-pbhh",
   "description": "[pbhh](http://123.56.89.122/) 适配器",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "@koishijs/assets": "^1.1.2",
-    "@satorijs/protocol": "^1.7.0"
+    "@satorijs/protocol": "^1.7.0",
+    "koishi": "^4.18.8"
   }
 }
