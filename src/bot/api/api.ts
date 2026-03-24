@@ -3,6 +3,7 @@ import { PbhhBotWithSse } from '../sse';
 import { isDirectId, isRoomId, makeChannelId, makeDirectId, makeRoomId, parseChannelId, parseDirectId, parseGuildId, parseRoomId } from '../../utils/ids';
 import { isSameMailPeer } from '../../utils/mail';
 import { getPostDisplayName } from '../../utils/post';
+import { adaptRoomMessageContent, createRoomQuote, type RoomEntityLookup, type RoomEntityResolver } from '../../message/room';
 export class PbhhBotWithAPI extends PbhhBotWithSse
 {
   protected getToken(): string
@@ -158,18 +159,26 @@ export class PbhhBotWithAPI extends PbhhBotWithSse
       const roomId = parseRoomId(channelId);
       if (roomId === null) throw new Error(`非法 room channelId: ${channelId}`);
       const msgs = await this.internal.getRoomMessages(this.getToken(), roomId);
-      return {
-        data: msgs.map((m) => ({
+      const resolver = createRoomEntityResolver(this);
+      const data: Universal.Message[] = [];
+      for (const m of msgs)
+      {
+        const timestamp = new Date(m.createdAt).getTime();
+        data.push({
           id: String(m.id),
-          content: m.content,
+          content: await adaptRoomMessageContent(m.content, resolver),
           channel: { id: channelId, type: Universal.Channel.Type.TEXT },
           user: {
             id: m.username,
             name: m.nickname || m.username,
             avatar: '',
           },
-          timestamp: new Date(m.createdAt).getTime(),
-        })),
+          timestamp,
+          quote: m.replyTo ? await createRoomQuote(roomId, m.replyTo, timestamp, resolver) : undefined,
+        });
+      }
+      return {
+        data,
       };
     }
     const postId = parseChannelId(channelId);
@@ -252,4 +261,36 @@ export class PbhhBotWithAPI extends PbhhBotWithSse
       data: [...users.values()].map((u) => ({ user: u })),
     };
   }
+}
+
+function createRoomEntityResolver(lookup: RoomEntityLookup): RoomEntityResolver
+{
+  const userCache = new Map<string, Promise<string>>();
+  const channelCache = new Map<string, Promise<string>>();
+  return {
+    resolveUserName(userId)
+    {
+      let task = userCache.get(userId);
+      if (!task)
+      {
+        task = lookup.getUser(userId)
+          .then((user) => user.name || userId)
+          .catch(() => userId);
+        userCache.set(userId, task);
+      }
+      return task;
+    },
+    resolveChannelName(channelId)
+    {
+      let task = channelCache.get(channelId);
+      if (!task)
+      {
+        task = lookup.getChannel(`room:${channelId}`)
+          .then((channel) => channel.name || channelId)
+          .catch(() => channelId);
+        channelCache.set(channelId, task);
+      }
+      return task;
+    },
+  };
 }

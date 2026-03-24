@@ -1,6 +1,7 @@
 import { WebSocket } from 'undici';
 import type { Context } from 'koishi';
 import type { PbhhLogger } from '../utils/logger';
+import type { RoomReplyPreview } from '../message/room';
 
 export interface RoomWsMessage
 {
@@ -11,6 +12,7 @@ export interface RoomWsMessage
   avatar: string;
   content: string;
   createdAt: string;
+  replyTo: RoomReplyPreview | null;
 }
 
 export interface RoomUserInfo
@@ -337,6 +339,7 @@ export class RoomWsManager
           avatar: String(parsed.avatar || ''),
           content: String(parsed.content || ''),
           createdAt: String(parsed.createdAt || new Date().toISOString()),
+          replyTo: parseReplyPreview(parsed.replyTo),
         };
         void this.onMessage(roomId, msg);
       }
@@ -476,4 +479,19 @@ export class RoomWsManager
     dispose();
     this.reconnectTimers.delete(roomId);
   }
+}
+
+function parseReplyPreview(value: unknown): RoomReplyPreview | null
+{
+  if (!value || typeof value !== 'object') return null;
+  const replyTo = value as Record<string, unknown>;
+  const id = Number(replyTo.id);
+  if (!Number.isFinite(id)) return null;
+  return {
+    id,
+    username: String(replyTo.username || ''),
+    nickname: String(replyTo.nickname || replyTo.username || ''),
+    avatar: String(replyTo.avatar || ''),
+    content: String(replyTo.content || ''),
+  };
 }

@@ -3,10 +3,18 @@ import { } from '@koishijs/assets';
 import { PbhhBot } from '../bot/base';
 import type { Fragment } from 'koishi';
 import { decodeMarkdown } from './markdown';
+
+function isRoomChannel(channelId?: string): boolean
+{
+  return !!channelId && channelId.startsWith('room:');
+}
+
 export async function renderMessage(bot: PbhhBot, content: Fragment, channelId?: string): Promise<string>
 {
   let result = '';
-  const normalizedInput = typeof content === 'string' ? decodeMarkdown(content) : content;
+  const normalizedInput = typeof content === 'string' && !isRoomChannel(channelId)
+    ? decodeMarkdown(content)
+    : content;
   const elements = h.normalize(normalizedInput);
   for (const element of elements)
   {
@@ -52,13 +60,17 @@ export async function renderMessage(bot: PbhhBot, content: Fragment, channelId?:
       case 'at':
         if (attrs.id)
         {
-          result += `@${attrs.name || attrs.id}`;
+          result += isRoomChannel(channelId)
+            ? `@${attrs.id}@`
+            : `@${attrs.name || attrs.id}`;
         }
         break;
       case 'sharp':
         if (attrs.id)
         {
-          result += `#${attrs.name || attrs.id}`;
+          result += isRoomChannel(channelId)
+            ? `#${attrs.id}#`
+            : `#${attrs.name || attrs.id}`;
         }
         break;
       case 'a':

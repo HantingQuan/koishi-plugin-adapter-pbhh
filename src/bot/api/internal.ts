@@ -85,6 +85,13 @@ export interface RoomMessage
   username: string;
   nickname: string;
   avatar: string;
+  replyTo: {
+    id: number;
+    username: string;
+    nickname: string;
+    avatar: string;
+    content: string;
+  } | null;
 }
 export interface MailSendResponse
 {

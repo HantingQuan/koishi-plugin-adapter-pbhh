@@ -8,6 +8,16 @@ export interface PbhhLogger
 }
 function truncateLongStrings(value: unknown, limit: number): unknown
 {
+  if (value instanceof Error)
+  {
+    const cause = 'cause' in value ? truncateLongStrings((value as Error & { cause?: unknown; }).cause, limit) : undefined;
+    return {
+      name: value.name,
+      message: value.message,
+      stack: value.stack ? truncateLongStrings(value.stack, limit) : undefined,
+      cause,
+    };
+  }
   if (typeof value === 'string')
   {
     return value.length > limit ? `${value.slice(0, limit)}...` : value;

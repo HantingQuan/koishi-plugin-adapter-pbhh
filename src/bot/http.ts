@@ -2,6 +2,21 @@ import { Config } from '../config';
 import { ProxyAgent } from 'undici';
 import { Context, sleep } from 'koishi';
 import { PbhhLogger } from '../utils/logger';
+
+export class PbhhHttpError extends Error
+{
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly statusText: string,
+    public readonly body: string,
+  )
+  {
+    super(message);
+    this.name = 'PbhhHttpError';
+  }
+}
+
 export interface FetchClient
 {
   fetchJson<T>(path: string, init?: RequestInit): Promise<T>;
@@ -119,7 +134,7 @@ export async function createFetchClient(ctx: Context, config: Config, logger: Pb
     if (!res.ok)
     {
       const text = await res.text().catch(() => '');
-      throw new Error(`HTTP ${res.status} ${res.statusText}: ${text}`);
+      throw new PbhhHttpError(`HTTP ${res.status} ${res.statusText}: ${text}`, res.status, res.statusText, text);
     }
     return res.json() as Promise<T>;
   }

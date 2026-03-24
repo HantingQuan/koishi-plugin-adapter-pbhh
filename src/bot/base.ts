@@ -10,6 +10,7 @@ import { RoomWsManager, type RoomWsMessage, type RoomWsEvent } from './rooms';
 import { isDirectId, makeDirectId, parseDirectId } from '../utils/ids';
 import { makeMailReplySubject, makePrivateMailSubject, parseMailAddress } from '../utils/mail';
 import { resolveReplyTargetId } from '../utils/reply';
+import { adaptRoomMessageContent, createRoomQuote, type RoomEntityLookup, type RoomEntityResolver } from '../message/room';
 import type { SendOptions } from '@satorijs/protocol';
 import { Bot, Context, Universal, Fragment } from 'koishi';
 export class PbhhBot extends Bot<Context, Config>
@@ -309,19 +310,28 @@ export class PbhhBot extends Bot<Context, Config>
   {
     const channelId = `room:${roomId}`;
     const guildId = `room:${roomId}`;
+    const timestamp = new Date(msg.createdAt).getTime();
+    const resolver = createRoomEntityResolver(this);
+    const content = await adaptRoomMessageContent(msg.content, resolver);
     const avatar = await resolveAvatarUrl(msg.avatar, this.config.baseUrl, this.config.gravatarMirror);
     const session = this.session({
       type: 'message',
-      timestamp: new Date(msg.createdAt).getTime(),
+      timestamp,
       selfId: this.selfId,
       platform: this.platform,
       user: { id: msg.username, name: msg.nickname, avatar },
       guild: { id: guildId },
       channel: { id: channelId, type: Universal.Channel.Type.TEXT },
-      message: { id: String(msg.id), content: msg.content },
+      message: { id: String(msg.id) },
     });
     session.messageId = String(msg.id);
-    session.content = msg.content;
+    session.content = content;
+    if (msg.replyTo)
+    {
+      const quote = await createRoomQuote(roomId, msg.replyTo, timestamp, resolver);
+      (session.event as unknown as Record<string, unknown>).quote = quote;
+      session.quote = quote;
+    }
     if (this.config.debug)
     {
       this.log.debug('RoomWs dispatch roomId=%d msgId=%d user=%s', roomId, msg.id, msg.username);
@@ -362,4 +372,36 @@ export class PbhhBot extends Bot<Context, Config>
       }
     }
   }
+}
+
+function createRoomEntityResolver(lookup: RoomEntityLookup): RoomEntityResolver
+{
+  const userCache = new Map<string, Promise<string>>();
+  const channelCache = new Map<string, Promise<string>>();
+  return {
+    resolveUserName(userId)
+    {
+      let task = userCache.get(userId);
+      if (!task)
+      {
+        task = lookup.getUser(userId)
+          .then((user) => user.name || userId)
+          .catch(() => userId);
+        userCache.set(userId, task);
+      }
+      return task;
+    },
+    resolveChannelName(channelId)
+    {
+      let task = channelCache.get(channelId);
+      if (!task)
+      {
+        task = lookup.getChannel(`room:${channelId}`)
+          .then((channel) => channel.name || channelId)
+          .catch(() => channelId);
+        channelCache.set(channelId, task);
+      }
+      return task;
+    },
+  };
 }
