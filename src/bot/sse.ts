@@ -1,29 +1,35 @@
 import { PbhhBot } from './base';
 import { Context, Universal } from 'koishi';
 import type { Message } from '@satorijs/protocol';
+import { getPostDisplayName } from '../utils/post';
+
 export interface SseEvent
 {
   topic: string;
   payload: Record<string, unknown>;
   timestamp: number;
 }
+
 export class PbhhBotWithSse extends PbhhBot
 {
   private abortController: AbortController | null = null;
   private running = false;
   private disposeReconnect: (() => void) | null = null;
   private reconnectDelay = 2000;
+
   startSse()
   {
     if (this.running) return;
     this.running = true;
     void this.loop();
   }
+
   stopSse()
   {
     this.running = false;
     this.cleanup();
   }
+
   private cleanup()
   {
     if (this.abortController)
@@ -37,6 +43,7 @@ export class PbhhBotWithSse extends PbhhBot
       this.disposeReconnect = null;
     }
   }
+
   private async loop()
   {
     const ctx = this.ctx as unknown as Context;
@@ -114,6 +121,7 @@ export class PbhhBotWithSse extends PbhhBot
       });
     }
   }
+
   private async handleLikedEvent(evt: SseEvent)
   {
     const p = evt.payload as Record<string, unknown>;
@@ -124,12 +132,12 @@ export class PbhhBotWithSse extends PbhhBot
     if (!liked) return;
     if (!Number.isFinite(postId) || !actorUsername) return;
     let rootId = postId;
-    let postTitle = `帖子 ${rootId}`;
+    let postTitle = getPostDisplayName(rootId);
     try
     {
       const post = await this.internal.getPost(this.token, postId);
       rootId = Number(post.rootId || post.id || postId);
-      if (post.title && String(post.title).trim()) postTitle = String(post.title).trim();
+      postTitle = getPostDisplayName(rootId, post.title);
     } catch
     {
     }
@@ -151,6 +159,7 @@ export class PbhhBotWithSse extends PbhhBot
       this.log.debug('emit pbhh/like: %o', eventData);
     }
   }
+
   private async handleEvent(evt: SseEvent)
   {
     if (!evt || !evt.topic) return;
@@ -185,6 +194,7 @@ export class PbhhBotWithSse extends PbhhBot
       this.log.debug('SSE topic=%s', evt.topic);
     }
   }
+
   private async handleNotifyMailReceived(evt: SseEvent)
   {
     const payload = evt.payload as Record<string, unknown>;
@@ -202,6 +212,7 @@ export class PbhhBotWithSse extends PbhhBot
       this.log.warn('处理邮件事件失败：%o', err);
     }
   }
+
   private async handleNotifyPostReplied(evt: SseEvent)
   {
     const p = evt.payload as Record<string, unknown>;
@@ -223,15 +234,12 @@ export class PbhhBotWithSse extends PbhhBot
     {
     }
     let rootId = postId;
-    let postTitle = `帖子 ${postId}`;
+    let postTitle = getPostDisplayName(postId);
     try
     {
       const post = await this.internal.getPost(this.token, postId);
       rootId = Number(post.rootId || post.id || postId);
-      if (post.title && String(post.title).trim())
-      {
-        postTitle = String(post.title).trim();
-      }
+      postTitle = getPostDisplayName(rootId, post.title);
     } catch
     {
     }
@@ -364,6 +372,7 @@ export class PbhhBotWithSse extends PbhhBot
     this.dispatch(session);
     this.log.debug('已 dispatch notify.post.replied：post=%s reply=%s', postId, replyId);
   }
+
   private async handlePostReplied(evt: SseEvent)
   {
     const p = evt.payload as Record<string, unknown>;
@@ -386,12 +395,12 @@ export class PbhhBotWithSse extends PbhhBot
       userAvatar = u.avatar || '';
     } catch { }
     let rootId = parentId;
-    let postTitle = `帖子 ${parentId}`;
+    let postTitle = getPostDisplayName(parentId);
     try
     {
       const post = await this.internal.getPost(this.token, parentId);
       rootId = Number(post.rootId || post.id || parentId);
-      if (post.title && String(post.title).trim()) postTitle = String(post.title).trim();
+      postTitle = getPostDisplayName(rootId, post.title);
     } catch { }
     const guildId = String(rootId);
     const channelId = `post:${rootId}`;

@@ -2,6 +2,7 @@ import { Universal } from 'koishi';
 import { PbhhBotWithSse } from '../sse';
 import { isDirectId, isRoomId, makeChannelId, makeDirectId, makeRoomId, parseChannelId, parseDirectId, parseGuildId, parseRoomId } from '../../utils/ids';
 import { isSameMailPeer } from '../../utils/mail';
+import { getPostDisplayName } from '../../utils/post';
 export class PbhhBotWithAPI extends PbhhBotWithSse
 {
   protected getToken(): string
@@ -21,7 +22,7 @@ export class PbhhBotWithAPI extends PbhhBotWithSse
       data: [
         ...posts.map((p) => ({
           id: `post:${p.id}`,
-          name: p.title ? p.title : `post#${p.id}`,
+          name: getPostDisplayName(p.id, p.title),
           avatar: '',
         })),
         ...rooms.map((r) => ({
@@ -53,7 +54,7 @@ export class PbhhBotWithAPI extends PbhhBotWithSse
     return {
       data: [{
         id: makeChannelId(postId),
-        name: `post#${postId}`,
+        name: getPostDisplayName(postId),
         type: Universal.Channel.Type.TEXT,
       }],
     };
@@ -74,7 +75,7 @@ export class PbhhBotWithAPI extends PbhhBotWithSse
     const p = await this.internal.getPost(this.getToken(), postId);
     return {
       id: String(p.id),
-      name: p.title ? p.title : `post#${p.id}`,
+      name: getPostDisplayName(p.id, p.title),
       avatar: '',
     };
   }
@@ -115,7 +116,7 @@ export class PbhhBotWithAPI extends PbhhBotWithSse
     const p = await this.internal.getPost(this.getToken(), postId);
     return {
       id: makeChannelId(p.id),
-      name: p.title ? p.title : `post#${p.id}`,
+      name: getPostDisplayName(p.id, p.title),
       type: Universal.Channel.Type.TEXT,
     };
   }
